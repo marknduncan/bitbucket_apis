@@ -8,20 +8,7 @@ use Symfony\Component\Dotenv\Dotenv;
 $dotenv = new Dotenv();
 $dotenv->load(__DIR__.'/.env');
 
-$repos = [
-//  'core',
-  'sv_laravel',
-  'sv_lumen',
-  'dp_laravel',
-  'dp_lumen',
-  'corp_www',
-  'in_lumen',
-  'ra_laravel',
-  'pwa_laravel',
-  'cx_vue',
-  'ax_vue',
-  'storis'
-];
+$repos = explode(',',getenv('BB_REPOS'));
 
 foreach($repos as $repo){
   echo "Running repo:\r\n" . $repo;
