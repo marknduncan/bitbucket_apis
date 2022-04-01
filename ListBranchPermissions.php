@@ -8,7 +8,6 @@ use Symfony\Component\Dotenv\Dotenv;
 $dotenv = (new Dotenv())->usePutenv()->bootEnv('.env');
 $repos = explode(',', getenv('BB_REPOS'));
 
-
 foreach ($repos as $repo) {
   echo "Running repo:" . $repo . "\r\n";
   $arr_body = getNextRequest(null, $repo);
@@ -27,13 +26,7 @@ function getNextRequest($uri = null, $repo) {
   ];
 
   if (empty($uri)) {
-
-    $response = $client->request('GET', '/2.0/repositories/' . getenv('BB_WORKSPACE') . '/' . $repo . '/commits', [
-      'query' => [
-//        'q' => 'values.date>=2021-03-03,values.date<=2022-03-03',
-        'fields' => '-values.repository.*,-values.links.*,-values.parents.*,-values.author.*',
-        'sort' => '-values.date'
-      ],
+    $response = $client->request('GET', '/2.0/repositories/' . getenv('BB_WORKSPACE') . '/' . $repo . '/branch-restrictions', [
       'auth' => $authorization
     ]);
 
@@ -48,38 +41,24 @@ function getNextRequest($uri = null, $repo) {
   $array_response = (array)json_decode($body);
 
   //write response for this request
-  writeResponseToFile($body, $repo);
+  writeResponseToFile($body, $repo, $array_response['page']);
 
   //get next field if it exists
   $next = !empty($array_response['next']) ? $array_response['next'] : null;
 
   if (!empty($next)) {
-
-    $body = $response->getBody();
-
-    $body_arr = json_decode($body, true);
-
-    $commit_date = new DateTime($body_arr['values'][0]['date']);
-
-    //filter routine - filter out if commit is not within desired date range since API doesnt support this yet,
-    if (
-      $commit_date >= new DateTime('2021-03-31') &&
-      $commit_date <= new DateTime('2022-04-02')) {
-
-      getNextRequest($next, $repo);
-    }
-
+    getNextRequest($next, $repo);
   }
 
 }
 
-function writeResponseToFile($array_data, $repo) {
+function writeResponseToFile($array_data, $repo, $page) {
 
-  $directory_string = 'commits_reports/' . $repo . '_' . date('m-y-d');
+  $directory_string = 'branch_permissions_reports/' . $repo . '_' . date('m-y-d');
   @mkdir($directory_string, 0755, true);
 
   // write out array_body to json file
-  $fp = fopen($directory_string . '/commits_' . microtime() . '.json', 'a');//opens file in append mode
+  $fp = fopen($directory_string . '/' . $page . '_' . time() . '.json', 'a');//opens file in append mode
   fwrite($fp, $array_data);
   fclose($fp);
 
